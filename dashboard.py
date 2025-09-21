@@ -98,10 +98,17 @@ def load_data():
     skills_mark_full['date'] = pd.to_datetime(skills_mark_full[['year', 'month']].assign(day=1))
     skills_mark_full = skills_mark_full.sort_values('date')
 
-    return employee_points_daily_full, skills_mark_full, employee_name_mapping, tasks_full
+    # Загружаем данные о больничных и отпусках
+    calendar_sick_holidays = pd.read_csv('output/calendar_sick_holidays.csv')
+    
+    # Создаем колонку с датой для calendar_sick_holidays (первое число месяца)
+    calendar_sick_holidays['date'] = pd.to_datetime(calendar_sick_holidays[['year', 'month']].assign(day=1))
+    calendar_sick_holidays = calendar_sick_holidays.sort_values('date')
+
+    return employee_points_daily_full, skills_mark_full, employee_name_mapping, tasks_full, calendar_sick_holidays
 
 # Загружаем данные
-employee_points_daily_full, skills_mark_full, employee_name_mapping, tasks_full = load_data()
+employee_points_daily_full, skills_mark_full, employee_name_mapping, tasks_full, calendar_sick_holidays = load_data()
 
 # Создаем списки для фильтров
 employee_data = employee_points_daily_full[['id_employee', 'fio_employee']].drop_duplicates()
@@ -173,8 +180,17 @@ if visualization == "Ежедневные очки (фильтр по сотру
     
     st.plotly_chart(fig, use_container_width=True)
     
+    # Получаем данные о больничных и отпусках за весь период
+    sick_holiday_data = calendar_sick_holidays[
+        calendar_sick_holidays['id_employee'] == selected_employee_id
+    ]
+    
+    # Извлекаем общее количество больничных и отпуска дней
+    total_sick_days = sick_holiday_data['sick_count'].sum() if len(sick_holiday_data) > 0 else 0
+    total_holiday_days = sick_holiday_data['holidays_count'].sum() if len(sick_holiday_data) > 0 else 0
+    
     # Статистика
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("Общее количество очков", f"{filtered_data['points'].sum():.0f}")
     with col2:
@@ -183,6 +199,10 @@ if visualization == "Ежедневные очки (фильтр по сотру
         st.metric("Максимальные очки", f"{filtered_data['points'].max():.0f}")
     with col4:
         st.metric("Количество дней", f"{len(filtered_data)}")
+    with col5:
+        st.metric("Больничные дни (всего)", f"{total_sick_days:.0f}")
+    with col6:
+        st.metric("Отпускные дни (всего)", f"{total_holiday_days:.0f}")
 
 elif visualization == "Ежедневные очки по месяцу (фильтр по сотруднику и месяцу)":
     # Фильтры
@@ -239,8 +259,19 @@ elif visualization == "Ежедневные очки по месяцу (филь
     
     st.plotly_chart(fig, use_container_width=True)
     
+    # Получаем данные о больничных и отпусках за выбранный месяц
+    selected_month_period_obj = selected_month_period.to_period('M')
+    sick_holiday_data = calendar_sick_holidays[
+        (calendar_sick_holidays['id_employee'] == selected_employee_id) &
+        (calendar_sick_holidays['date'].dt.to_period('M') == selected_month_period_obj)
+    ]
+    
+    # Извлекаем количество больничных и отпуска дней
+    sick_days = sick_holiday_data['sick_count'].sum() if len(sick_holiday_data) > 0 else 0
+    holiday_days = sick_holiday_data['holidays_count'].sum() if len(sick_holiday_data) > 0 else 0
+    
     # Статистика
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("Общее количество очков", f"{filtered_data['points'].sum():.0f}")
     with col2:
@@ -249,6 +280,10 @@ elif visualization == "Ежедневные очки по месяцу (филь
         st.metric("Максимальные очки", f"{filtered_data['points'].max():.0f}")
     with col4:
         st.metric("Количество дней", f"{len(filtered_data)}")
+    with col5:
+        st.metric("Больничные дни", f"{sick_days:.0f}")
+    with col6:
+        st.metric("Отпускные дни", f"{holiday_days:.0f}")
     
     # Детализация по изделиям за весь месяц
     st.markdown("### 🔍 Детализация по изделиям за весь месяц")
@@ -366,8 +401,17 @@ elif visualization == "Месячные средние очки (фильтр п
     
     st.plotly_chart(fig, use_container_width=True)
     
+    # Получаем данные о больничных и отпусках за весь период
+    sick_holiday_data = calendar_sick_holidays[
+        calendar_sick_holidays['id_employee'] == selected_employee_id
+    ]
+    
+    # Извлекаем общее количество больничных и отпуска дней
+    total_sick_days = sick_holiday_data['sick_count'].sum() if len(sick_holiday_data) > 0 else 0
+    total_holiday_days = sick_holiday_data['holidays_count'].sum() if len(sick_holiday_data) > 0 else 0
+    
     # Статистика
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("Средние очки за все месяцы", f"{filtered_data['points'].mean():.2f}")
     with col2:
@@ -376,6 +420,10 @@ elif visualization == "Месячные средние очки (фильтр п
         st.metric("Минимальные средние очки", f"{filtered_data['points'].min():.2f}")
     with col4:
         st.metric("Количество месяцев", f"{len(filtered_data)}")
+    with col5:
+        st.metric("Больничные дни (всего)", f"{total_sick_days:.0f}")
+    with col6:
+        st.metric("Отпускные дни (всего)", f"{total_holiday_days:.0f}")
 
 elif visualization == "Skills Mark (фильтр по сотруднику)":
     # Фильтр по сотруднику
@@ -420,8 +468,17 @@ elif visualization == "Skills Mark (фильтр по сотруднику)":
     
     st.plotly_chart(fig, use_container_width=True)
     
+    # Получаем данные о больничных и отпусках за весь период
+    sick_holiday_data = calendar_sick_holidays[
+        calendar_sick_holidays['id_employee'] == selected_employee_id
+    ]
+    
+    # Извлекаем общее количество больничных и отпуска дней
+    total_sick_days = sick_holiday_data['sick_count'].sum() if len(sick_holiday_data) > 0 else 0
+    total_holiday_days = sick_holiday_data['holidays_count'].sum() if len(sick_holiday_data) > 0 else 0
+    
     # Статистика
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("Средний Skills Mark", f"{filtered_data['skills_mark'].mean():.2f}")
     with col2:
@@ -430,6 +487,10 @@ elif visualization == "Skills Mark (фильтр по сотруднику)":
         st.metric("Минимальный Skills Mark", f"{filtered_data['skills_mark'].min():.0f}")
     with col4:
         st.metric("Количество месяцев", f"{len(filtered_data)}")
+    with col5:
+        st.metric("Больничные дни (всего)", f"{total_sick_days:.0f}")
+    with col6:
+        st.metric("Отпускные дни (всего)", f"{total_holiday_days:.0f}")
 
 # Информация в футере
 st.markdown("---")
