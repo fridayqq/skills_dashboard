@@ -272,14 +272,15 @@ elif visualization == "Ежедневные очки по месяцу (филь
             
             # Показываем таблицу со всеми записями
             st.dataframe(
-                detailed_data_sorted[['date_formatted', 'sap_id', 'sap_name', 'points', 'units_made']].head(50),
+                detailed_data_sorted[['date_formatted', 'sap_id', 'sap_name', 'points', 'units_made', 'norma_product_adjusted_with_discounts']].head(50),
                 use_container_width=True,
                 column_config={
                     "date_formatted": "Дата",
                     "sap_id": "SAP ID",
                     "sap_name": "Название изделия",
                     "points": "Очки",
-                    "units_made": "Количество"
+                    "units_made": "Количество",
+                    "norma_product_adjusted_with_discounts": "Норма с учетом скидок"
                 }
             )
             
